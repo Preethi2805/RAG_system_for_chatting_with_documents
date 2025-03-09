@@ -63,7 +63,7 @@ The scatter plot below visualizes the document embeddings in a 2D space after ap
 - **Orange "X"** represents the augmented queries, which are alternative phrasings of the original query.
 - **Green circle (hollow)** represents the embeddings of the most relevant documents retrieved for the query.
 
-### Interpretation:
+#### Interpretation:
 - The closer the red "X" is to the blue dots, the more relevant the documents are to the original query.
 - The orange "X" markers show the results of query expansion, and ideally, they should cluster near the original query.
 - The green circles indicate the retrieved documents that are considered most relevant based on semantic similarity.
