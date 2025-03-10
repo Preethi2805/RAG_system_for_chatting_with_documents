@@ -4,12 +4,12 @@
 
 This project builds a financial research assistant capable of answering complex finance-related questions by extracting insights from financial reports. The system leverages Natural Language Processing (NLP), machine learning models, and a combination of text preprocessing, embeddings, and query expansion to deliver precise and contextually relevant answers to user queries.
 
-The project is designed to handle multiple text files, in this case, 10 news articles, and allows for detailed analysis through:
+The project is designed to handle reports and allows for detailed analysis through:
 
 - Text extraction from PDF reports.
 - Splitting long texts into chunks for easier processing.
 - Converting text into embeddings (vector representations) using pre-trained models.
-- Using ChromaDB to store and query embeddings.
+- ChromaDB is used to store and query embeddings.
 - Generating augmented queries to improve search results and answer relevance.
 - Visualizing document embeddings in a lower-dimensional space using UMAP.
 
