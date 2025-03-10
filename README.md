@@ -72,6 +72,5 @@ The scatter plot below visualizes the document embeddings in a 2D space after ap
 
 - Integration of more sophisticated query generation and retrieval mechanisms.
 - Deployment of the model as a web app for real-time use.
-- Optimizing the embeddings and reducing dimensionality further for better search results.
 
 ---
