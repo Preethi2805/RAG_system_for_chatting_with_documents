@@ -59,7 +59,7 @@ document = Document(page_content = full_document)
 character_split_texts = character_splitter.split_documents([document]) # Splitting the string into chucks of size 1000
 
 # print(character_split_texts[0])
-print(f"\nTotal Number of chucks: {len(character_split_texts)}") # Number of chucks - 350
+print(f"Total Number of chucks based on character splitting: {len(character_split_texts)}") # Number of chucks - 350
 
 # Splitting these character-based chunks further into token-based chunks
 token_splitter = SentenceTransformersTokenTextSplitter(
@@ -74,7 +74,6 @@ for text in character_split_texts:
     token_split_texts += token_splitter.split_text(text.page_content) 
 
 # print(token_split_texts[0])
-print("\n")
 print(f"Number of chucks after token based splitting: {len(token_split_texts)}") # 359 from 350
 
 #Using embedding function from chromadb to convert words into vectors
@@ -141,47 +140,56 @@ def gen_augument_query(query, model = "llama3-8b-8192"):
 
 original_query = ("What details can you provide about the factors that led to revenue growth?")
 
-# chroma_collection.query performs a similarity search
-hypothetical_answer = chroma_collection.query(
-    query_texts = [original_query],
-    n_results = 5,                          # Returns the top 5 results
-    include = ["documents", "embeddings"]   # returns both (actual text of the chunk, their vector representations)
-)
-
-retrieved_documents = hypothetical_answer["documents"][0]
-print(f"The hypothetical Answer to the original query: {retrieved_documents}")
-
+# Generating augumented queries and printing them
 aug_queries = gen_augument_query(original_query)
-
-# Displaying the augumented queries
 print("The augumented Queries are:")
 for query in aug_queries:
     print("\n- ", query)
 
 # Combining original query with augumented queries
-print("Displaying all the queries:")
 all_queries = [original_query] + aug_queries
-# print("\n", all_queries)
+
+# chroma_collection.query performs a similarity search
+answers = chroma_collection.query(
+    query_texts = all_queries,
+    n_results = 5,                          # Returns the top 5 results
+    include = ["documents", "embeddings"]   # returns both (actual text of the chunk, their vector representations)
+)
+
+# Retrieving just the documents(answer to each query)
+retrieved_results = answers["documents"][0]
+
+# Deduplicating the retrieved answer
+unique_docs = set()
+for documents in retrieved_results:
+    for doc in documents: 
+        unique_docs.add(doc)
+
+# Printing the retrieved answer for each query
+print("")
+for i, docs in enumerate(retrieved_results):
+    print(f"Query: {all_queries[i]}")
+    print("")
+    print("Result:")
+    print(docs)
+    print("-" * 100)
 
 # Visualising the embeddings in a lower-dimensional space - to identify meaningful patterns
-
-#.get() retrieves a dictionary from collection
-data = chroma_collection.get(include=["embeddings"])
-
-# Accessing only the embeddings from the dictionary
-embeddings = data["embeddings"]
-
-# Dimensionality reduction using UMAP (Uniform Manifold Approximation and Projection)
 import umap
-umap_transform = umap.UMAP(random_state = 0, transform_seed = 0).fit(embeddings)
 
 # Projecting the embedding into a lower dimensional space using UMAP transformer.
 def project_embeddings(embeddings, umap_transform):
     return umap_transform.transform(embeddings)
 
-projected_dataset_embeddings = project_embeddings(embeddings, umap_transform )
+# Embeddings for the entire dataset in the vector space
+data = chroma_collection.get(include=["embeddings"])    #.get() retrieves the dictionary from collection
+embeddings = data["embeddings"]     # Accessing only the embeddings from the dictionary
 
-retrieved_embeddings = hypothetical_answer["embeddings"][0]
+# Dimensionality reduction using UMAP (Uniform Manifold Approximation and Projection)
+umap_transform = umap.UMAP(random_state = 0, transform_seed = 0).fit(embeddings)
+
+# Reducing the dimensions of the document embeddings
+projected_dataset_embeddings = project_embeddings(embeddings, umap_transform )
 
 # Converting the queries into embeddings to compare them directly with the document embeddings
 original_query_embeddings = embedding_function([original_query])
@@ -190,7 +198,11 @@ augumented_query_embeddings = embedding_function(all_queries)
 # Projecting the query embeddings into the same UMAP space as the dataset
 project_original_query = project_embeddings(original_query_embeddings, umap_transform)
 project_augumented_query = project_embeddings(augumented_query_embeddings, umap_transform)
-project_retrieved_embedding = project_embeddings(retrieved_embeddings, umap_transform)
+
+retrieved_embeddings = answers["embeddings"]
+result_embeddings = [item for sublist in retrieved_embeddings for item in sublist]
+project_answers_embedding = project_embeddings(result_embeddings, umap_transform)
+
 # Ideally, the queries should be close to relevant document clusters.
 
 # Visualising the embeddings
@@ -201,6 +213,7 @@ plt.scatter(
     projected_dataset_embeddings[:, 0],     
     projected_dataset_embeddings[:, 1],     
     s = 10,                                 # Size of dots
+    facecolors = "none",
     color = "blue"
 )
 
@@ -224,8 +237,8 @@ plt.scatter(
 
 # Plotting the retrieved documents - Shows the search results
 plt.scatter(
-    project_retrieved_embedding[:, 0],
-    project_retrieved_embedding[:, 1],
+    project_answers_embedding[:, 0],
+    project_answers_embedding[:, 1],
     s = 100, 
     facecolors = "none",    # Hollow circle
     edgecolors = "g",       
